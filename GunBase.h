@@ -102,6 +102,11 @@ protected:
     /// </summary>
     void PlayShotAnimation(VECTOR cameraForwardVector);
 
+    /// <summary>
+    /// リロードアニメーションの再生
+    /// </summary>
+    void PlayReloadAnimation();
+
     //---------------------------------------------------------------------------------//
     //                                      変数                                       //
     //---------------------------------------------------------------------------------//
@@ -138,6 +143,7 @@ protected:
     // アニメーション
     int             runAnimationCount;          // 走るアニメーションカウント
     int             shotAnimationCount;         // 撃つアニメーションカウント
+    int             reloadAnimationCount;       // リロードアニメーションカウント
 };
 
 

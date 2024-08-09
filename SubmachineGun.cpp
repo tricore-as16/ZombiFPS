@@ -11,7 +11,8 @@
 /// コンストラクタ
 /// </summary>
 SubmachineGun::SubmachineGun()
-    : runAnimationLerpFactor        (0.0f)
+    : runAnimationFactor        (0.0f)
+    , reloadAnimationFactor     (0.0f)
 {
     modelDataManager = ModelDataManager::GetInstance();
     Initialize();
@@ -75,9 +76,6 @@ void SubmachineGun::Update(VECTOR setPosition, VECTOR cameraVector, VECTOR camer
     // 弾丸の更新
     UpdateShooting(cameraPosition,cameraTargetVector);
 
-    // プレイヤーが走っているときアニメーション再生
-    PlayRunAnimation(playerState);
-
     // 移動更新
     UpdateMove(setPosition, playerState);
 }
@@ -93,8 +91,12 @@ void SubmachineGun::UpdateMove(VECTOR setPosition, Player::State playerState)
     VECTOR movePosition = position;
 
     // 現在の適用率に基づいてオフセットを計算
-    VECTOR offset = VScale(Player::RunAnimationOffset, runAnimationLerpFactor);
-    movePosition = VAdd(position, offset);
+    VECTOR runOffset    = FixedRunPosition(playerState);
+    VECTOR reloadOffset = FixedReloadPosition(playerState);
+
+    // 各種ステート時の座標修正
+    movePosition = VAdd(movePosition, runOffset);
+    movePosition = VAdd(movePosition, reloadOffset);
 
     // 座標の設定
     MV1SetPosition(modelHandle, movePosition);
@@ -104,27 +106,63 @@ void SubmachineGun::UpdateMove(VECTOR setPosition, Player::State playerState)
 /// 走りのアンメーション再生
 /// </summary>
 /// <param name="playerState">プレイヤーのステート</param>
-void SubmachineGun::PlayRunAnimation(Player::State playerState)
+VECTOR SubmachineGun::FixedRunPosition(Player::State playerState)
 {
     // 走りアニメーション時の処理
     if (playerState == Player::State::Run)
     {
         // アニメーションの適用率を増加させる
-        runAnimationLerpFactor += Player::RunAnimationFactorSpeed;
-        if (runAnimationLerpFactor > 1.0f)
+        runAnimationFactor += Player::RunAnimationFactorSpeed;
+        if (runAnimationFactor > 1.0f)
         {
-            runAnimationLerpFactor = 1.0f;
+            runAnimationFactor = 1.0f;
         }
     }
     else
     {
         // 他の状態に移行した場合、適用率を減少させる
-        runAnimationLerpFactor -= Player::RunAnimationFactorSpeed;
-        if (runAnimationLerpFactor < 0.0f)
+        runAnimationFactor -= Player::RunAnimationFactorSpeed;
+        if (runAnimationFactor < 0.0f)
         {
-            runAnimationLerpFactor = 0.0f;
+            runAnimationFactor = 0.0f;
         }
     }
+
+    // 現在の適用率を返す
+    VECTOR runOffset = VScale(Player::RunAnimationOffset, runAnimationFactor);
+    return runOffset;
+}
+
+/// <summary>
+/// リロード時の座標調整
+/// </summary>
+/// <param name="playerState">プレイヤーの状態</param>
+/// <returns>調整された自身のポジション</returns>
+VECTOR SubmachineGun::FixedReloadPosition(Player::State playerState)
+{
+    // 走りアニメーション時の処理
+    if (playerState == Player::State::Reload)
+    {
+        // アニメーションの適用率を増加させる
+        reloadAnimationFactor += Player::ReloadAnimationFactorSpeed;
+        if (reloadAnimationFactor > 1.0f)
+        {
+            reloadAnimationFactor = 1.0f;
+        }
+    }
+    else
+    {
+        // 他の状態に移行した場合、適用率を減少させる
+        reloadAnimationFactor -= Player::ReloadAnimationFactorSpeed;
+        if (reloadAnimationFactor < 0.0f)
+        {
+            reloadAnimationFactor = 0.0f;
+        }
+    }
+
+    // 現在の適用率を返す
+    VECTOR reloadOffset = VScale(Player::ReloadAnimationOffset, reloadAnimationFactor);
+    return reloadOffset;
 }
 
 /// <summary>

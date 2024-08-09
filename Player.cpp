@@ -7,6 +7,7 @@
 #include "PlayerRunState.h"
 #include "PlayerWalkState.h"
 #include "PlayerShotState.h"
+#include "PlayerReloadState.h"
 #include "ModelDataManager.h"
 #include "AssaultRifle.h"
 #include "BattleRifle.h"
@@ -22,10 +23,14 @@ Player::Player()
     , rotationMatrix                (MGetIdent())
     , pressMoveButton               (false)
     , isShooting                    (false)
+    , isReload                      (false)
     , shootFireRateCount            (0)
     , isHitEnemyAttack              (false)
     , runAnimationCount             (0)
-    , runAnimationLerpFactor        (0.0f)
+    , runAnimationFactor        (0.0f)
+    , reloadAnimationCount          (0)
+    , reloadAnimationFactor         (0.0f)
+    , reloadTimer                   (0)
 {
     modelDataManager        = ModelDataManager::GetInstance();
     Initialize();
@@ -104,6 +109,9 @@ void Player::Update(const Input& input, Stage& stage)
     // 射撃更新
     UpdateShootingEquippedWeapon(input);
 
+    // リロード更新
+    UpdateReload(input);
+
     // 装備中の武器の更新
     VECTOR pos = playerCamera->GetCameraForwardVector();
     equippedGun->Update(position, playerCamera->GetCameraForwardVector(),
@@ -143,6 +151,9 @@ void Player::Draw(const Stage& stage)
         break;
     case Player::State::Shot:
         DrawString(100, 200, "Shot", DebugFontColor, true);
+        break;
+    case Player::State::Reload:
+        DrawString(100, 200, "Reload", DebugFontColor, true);
         break;
     case Player::State::Jump:
         DrawString(100, 200, "Jump", DebugFontColor, true);
@@ -257,18 +268,27 @@ float Player::SettingMoveSpeed(State state)
     case Player::State::Idle:
         moveSpeed = 0.0f;
         break;
+
     case Player::State::Walk:
         moveSpeed = WalkMoveSpeed;
         break;
+
     case Player::State::Run:
         moveSpeed = RunMoveSpeed;
         break;
+
     case Player::State::Shot:
         moveSpeed = WalkMoveSpeed;
         break;
+
+    case Player::State::Reload:
+        moveSpeed = WalkMoveSpeed;
+        break;
+
     case Player::State::Jump:
         moveSpeed = 0.0f;
         break;
+
     case Player::State::OnHitEnemy:
         moveSpeed = OnHitEnemyMoveSpeed;
         break;
@@ -573,6 +593,35 @@ void Player::UpdateShootingEquippedWeapon(const Input& input)
 }
 
 /// <summary>
+/// リロードの更新
+/// </summary>
+/// <param name="input">入力情報</param>
+void Player::UpdateReload(const Input& input)
+{
+    // 「R」が押されたらリロード
+    if (CheckHitKey(KEY_INPUT_R))
+    {
+        // リロードしている
+        isReload = true;
+    }
+
+    // 一定フレーム期間リロードさせる
+    if (isReload)
+    {
+        // タイマーを進める
+        reloadTimer++;
+
+        // リロードに必要なフレーム数になったら終了
+        // FIXME:銃からリロードに必要な時間をもらうように変更する
+        if (reloadTimer >= ReloadTimeFrame)
+        {
+            isReload = false;   // リロードをやめる
+            reloadTimer = 0;    // タイマーをリセット
+        }
+    }
+}
+
+/// <summary>
 /// 使い終わった弾丸をオブジェクトプールに返す
 /// </summary>
 void Player::DeactivateBulletReturn()
@@ -587,10 +636,17 @@ void Player::DeactivateBulletReturn()
 /// <param name="input">入力情報</param>
 void Player::TransitionInputState(const Input& input)
 {
-    // アイドル、歩き、走りのどれかの状態か
-    bool isIdleWalkRun = (state == State::Idle || state == State::Walk || state == State::Run);
+    // アイドル、歩き、走り、射撃、いずれかの状態か
+    bool isIdleWalkRun = (state == State::Idle || state == State::Walk || state == State::Run || state == State::Shot || state == State::Reload);
 
-    if (!pressMoveButton && !isShooting)   // 移動キーとショットボタンが押されていなければ
+    // リロード中はステート移動できない
+    if (isReload)
+    {
+        // リロード
+        ChangeState(Player::State::Reload);
+        return;
+    }
+    else if(!pressMoveButton && !isShooting)   // 移動キーとショットボタンが押されていなければ
     {
         // アイドル
         ChangeState(State::Idle);
@@ -605,7 +661,7 @@ void Player::TransitionInputState(const Input& input)
         // 走り
         ChangeState(State::Run);
     }
-    else if (state == State::Idle || state == State::Run || state == State::Shot)
+    else if (isIdleWalkRun)
     {
         // 歩き
         ChangeState(State::Walk);
@@ -664,6 +720,12 @@ void Player::ChangeState(State newState)
         currentState = new PlayerShotState(modelHandle, previousData);
 
         break;
+    case Player::State::Reload:
+        // リロード状態に推移
+        state = State::Reload;
+        currentState = new PlayerReloadState(modelHandle, previousData);
+        break;
+
     case Player::State::OnHitEnemy:
         // エネミーに攻撃されている状態へ推移
         state = State::OnHitEnemy;

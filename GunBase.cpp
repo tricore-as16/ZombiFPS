@@ -6,6 +6,7 @@
 GunBase::GunBase()
     : runAnimationCount     (0)
     , shotAnimationCount    (0)
+    , reloadAnimationCount  (0)
     , rotationMatrix        (MGetIdent())
 {
 }
@@ -58,7 +59,7 @@ void GunBase::UpdateAngle(VECTOR cameraForwardVector, float pitch,Player::State 
     float gunAngleY = atan2f(cameraForward.x, cameraForward.z);
 
     // 腰だめの角度に修正
-    gunAngleY -= HipUpPositionAngleY;           // 水平方向回転度
+    gunAngleY   -= HipUpPositionAngleY;         // 水平方向回転度
     cameraPitch += HipUpPositionANglePitch;     // 垂直方向回転度
 
     // 回転行列に変更
@@ -70,16 +71,25 @@ void GunBase::UpdateAngle(VECTOR cameraForwardVector, float pitch,Player::State 
     rotationMatrix = MMult(rotationX, rotationY);
 
     // ステートに応じてアニメーションを再生
+    // MEMO:
+    // アニメーション中にモデルの座標、回転値が変わるため
+    // 回転の設定関数はこれよりも後に行う
     switch (playerState)
     {
     case Player::State::Run:
         PlayRunAnimation();
         break;
+
     case Player::State::Shot:
         PlayShotAnimation(cameraForwardVector);
         break;
+
+    case Player::State::Reload:
+        break;
+
     case Player::State::OnHitEnemy:
         break;
+
     default:
         break;
     }
@@ -109,7 +119,7 @@ void GunBase::FixedGunPosition(VECTOR setPosition, VECTOR cameraForwardVector)
 }
 
 /// <summary>
-/// 走るアニメーションを再生
+/// 走るアニメーションの再生
 /// </summary>
 void GunBase::PlayRunAnimation()
 {
@@ -169,4 +179,12 @@ void GunBase::PlayShotAnimation(VECTOR cameraForwardVector)
         // アニメーションカウントをリセットする
         shotAnimationCount = 0;
     }
+}
+
+/// <summary>
+/// リロードアニメーションの再生
+/// </summary>
+void GunBase::PlayReloadAnimation()
+{
+
 }

@@ -25,7 +25,8 @@ public:
         Idle,           // 何もしていない
         Walk,           // 歩き
         Run,            // 走り
-        Shot,           // 発砲中
+        Shot,           // 発砲
+        Reload,         // リロード
         Jump,           // ジャンプ
         OnHitEnemy,     // エネミーに当たった状態
     };
@@ -103,10 +104,13 @@ public:
     //---------------------------------------------------------------------------------//
     //                                      定数                                       //
     //---------------------------------------------------------------------------------//
-    static constexpr VECTOR RunAnimationOffset      = { 0.0f,-0.5f,0.0f };  // 走りアニメーション再生時のずらし量
-    static constexpr float  RunAnimationLimitAngle  = 0.3f;                 // 走りアニメーション中に回転させる最大角度
-    static constexpr float  RunAnimationFrameCycle  = 60.0f;                // 走りアニメーションを再生する周期
-    static constexpr float  RunAnimationFactorSpeed = 0.1f;                 // 走りアニメーションの適応速度
+    static constexpr VECTOR RunAnimationOffset          = { 0.0f,-0.5f,0.0f };      // 走りアニメーション再生時のずらし量
+    static constexpr float  RunAnimationLimitAngle      = 0.3f;                     // 走りアニメーション中に回転させる最大角度
+    static constexpr float  RunAnimationFrameCycle      = 60.0f;                    // 走りアニメーションを再生する周期
+    static constexpr float  RunAnimationFactorSpeed     = 0.07f;                    // 走りアニメーションの適応速度
+    static constexpr VECTOR ReloadAnimationOffset       = { 0.0f,-1.0f,0.0f };      // リロードアニメーション再生時のずらし量
+    static constexpr float  ReloadAnimationFactorSpeed  = 0.05f;                    // リロードアニメーションの再生速度
+    static constexpr int    ReloadTimeFrame             = 60;                       // リロードに必要なフレーム数
 
 private:
     /// <summary>
@@ -163,11 +167,16 @@ private:
     /// <param name="type">アニメーションの種類</param>
     void PlayAnimation(AnimationType type);
 
-    /// <summary>
     /// 銃を撃つ
     /// </summary>
     /// <param name="input">入力情報</param>
     void UpdateShootingEquippedWeapon(const Input& input);
+
+    /// <summary>
+    /// リロードの更新
+    /// </summary>
+    /// <param name="input">入力情報</param>
+    void UpdateReload(const Input& input);
 
     /// <summary>
     /// 使い終わった弾丸をオブジェクトプールに返す
@@ -233,6 +242,8 @@ private:
     int         modelHandle;                // モデルハンドル
     State       state;                      // 状態
     bool        isShooting;                 // 発砲状態か
+    bool        isReload;                   // リロード状態か
+    int         reloadTimer;                // リロードを完了するための時間
     bool        currentFrameMove;           // そのフレームで動いたかどうか
     bool        pressMoveButton;            // 移動用のボタンが入力されているか
 
@@ -244,6 +255,8 @@ private:
     float       animationBlendRate;                 // 現在と過去のアニメーションのブレンド率
     PlayerStateBase::AnimationData animationData;   // アニメーション再生に必要なデータ
     int         runAnimationCount;                  // 走りアニメーションを再生するカウント
-    float       runAnimationLerpFactor;
+    float       runAnimationFactor;                 // 走りアニメーションの適用率
+    int         reloadAnimationCount;               // リロードアニメーションを再生するカウント
+    float       reloadAnimationFactor;              // リロードアニメーションの適用率
 };
 

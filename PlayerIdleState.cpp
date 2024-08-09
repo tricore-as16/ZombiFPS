@@ -28,6 +28,7 @@ PlayerIdleState::PlayerIdleState(int playerModelHandle, AnimationData previousSt
 /// </summary>
 PlayerIdleState::~PlayerIdleState()
 {
+    // 処理なし
 }
 
 /// <summary>
